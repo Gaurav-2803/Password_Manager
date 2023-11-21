@@ -1,0 +1,13 @@
+-- SQLBook: Code
+-- Active: 1700549358859@@127.0.0.1@3306
+CREATE DATABASE password_manager
+    DEFAULT CHARACTER SET = 'utf8mb4';
+-- SQLBook: Code
+use password_manager;
+-- SQLBook: Code
+CREATE TABLE master_accounts(username VARCHAR(20) PRIMARY KEY,hash_pass VARCHAR(32) NOT NULL);
+-- SQLBook: Code
+SELECT username, hash_pass from master_accounts;
+-- SQLBook: Code
+INSERT INTO master_accounts VALUES('',{hashed_pass});
+-- SQLBook: Code

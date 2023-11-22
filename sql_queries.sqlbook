@@ -7,7 +7,36 @@ use password_manager;
 -- SQLBook: Code
 CREATE TABLE master_accounts(username VARCHAR(20) PRIMARY KEY,hash_pass VARCHAR(32) NOT NULL);
 -- SQLBook: Code
-SELECT username, hash_pass from master_accounts;
+SELECT * from master_accounts;
 -- SQLBook: Code
 INSERT INTO master_accounts VALUES('',{hashed_pass});
 -- SQLBook: Code
+ALTER TABLE master_accounts add salt VARCHAR(16) not NULL;
+-- SQLBook: Code
+alter table master_accounts RENAME COLUMN hash_pass to hashed_pass
+-- SQLBook: Code
+alter table master_accounts MODIFY COLUMN hashed_pass VARCHAR(97)
+-- SQLBook: Code
+delete from master_accounts;
+-- SQLBook: Code
+-- Active: 1700549358859@@127.0.0.1@3306@password_manager
+CREATE TABLE user_credentials(
+    username VARCHAR(20) NOT NULL,
+    site_name VARCHAR(20) PRIMARY KEY,
+    hashed_pass VARCHAR(32) NOT NULL,
+    site_url VARCHAR(50),
+    contact_num VARCHAR(10),
+    email_id VARCHAR(255),
+    recovery_email VARCHAR(255),
+    recovery_question VARCHAR(255),
+    revovery_answer VARCHAR(255),
+    FOREIGN KEY (username) REFERENCES master_accounts(username));
+
+-- SQLBook: Code
+alter table user_credentials ADD
+-- SQLBook: Code
+INSERT into user_credentials VALUES('diablo','','dgsg',NULL,NULL,NULL,NULL,NULL,NULL);
+-- SQLBook: Code
+drop TABLE user_credentials;
+-- SQLBook: Code
+select * from user_credentials;

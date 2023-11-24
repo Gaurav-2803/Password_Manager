@@ -78,10 +78,10 @@ class HelldoorUsers:
     def create_user(self):
         try:
             for chances in range(1, 4):
-                self.master_username = input("Username : ")
+                HelldoorUsers.master_username = input("Username : ")
                 self.cursor.execute("SELECT username from master_accounts;")
                 username_list = self.cursor.fetchall()
-                if self.master_username in username_list:
+                if HelldoorUsers.master_username in username_list:
                     print(f"Username Taken, Try Again({chances}/3)")
                 else:
                     break
@@ -96,7 +96,7 @@ class HelldoorUsers:
                         f"""
                         INSERT INTO master_accounts
                         VALUES (
-                            '{self.master_username}',
+                            '{HelldoorUsers.master_username}',
                             '{hashed_pass}',
                             '{salt}'
                             );
@@ -104,28 +104,30 @@ class HelldoorUsers:
                     )
                     self.mydb.commit()
                     print("User Added")
-                    self.verify_credentials()
+                    break
                 else:
                     print(f"Passwords do not match. Try Again({chances}/3) !!!")
 
         except KeyboardInterrupt:
             print("\nExited Successfully")
+        except Exception as error:
+            print(f"Error : {error.__class__.__name__}")
 
     # your code here
     def verify_credentials(self):
         try:
             print("Login:")
-            self.master_username = input("Username : ")
+            HelldoorUsers.master_username = input("Username : ")
             self.cursor.execute("SELECT username FROM master_accounts;")
             username_list = self.cursor.fetchall()
 
-            if any(user[0] == self.master_username for user in username_list):
+            if any(user[0] == HelldoorUsers.master_username for user in username_list):
                 self.master_password = getpass("Password : ")
                 self.cursor.execute(
                     f"""
                     SELECT hashed_pass, salt
                     FROM master_accounts
-                    WHERE username='{self.master_username}';
+                    WHERE username='{HelldoorUsers.master_username}';
                     """
                 )
                 db_hashed_pass, salt = list(self.cursor.fetchone())
@@ -172,7 +174,7 @@ class HelldoorUsers:
                                 f"""
                                 UPDATE master_accounts
                                 SET hashed_pass = '{hashed_pass}',salt = '{salt}'
-                                WHERE username = '{self.master_username}';
+                                WHERE username = '{HelldoorUsers.master_username}';
                                 """
                             )
                             self.mydb.commit()
@@ -204,14 +206,14 @@ class HelldoorUsers:
                     self.cursor.execute(
                         f"""
                         DELETE FROM master_accounts
-                        WHERE username = '{self.master_username}';
+                        WHERE username = '{HelldoorUsers.master_username}';
                         """
                     )
                     self.mydb.commit()
-                    print(f"{self.master_username} gone forever :(")
+                    print(f"{HelldoorUsers.master_username} gone forever :(")
                     exit()
                 elif ask.loweer() == "n":
-                    print(f"Thank You {self.master_username} for Staying :)")
+                    print(f"Thank You {HelldoorUsers.master_username} for Staying :)")
                     exit()
                 else:
                     print(f"Invalid Choice. Try Again({chances}/3)")
@@ -247,7 +249,7 @@ class HelldoorSecrets(HelldoorUsers):
             os.system("clear")
 
     def flag_check(self):
-        # self.clear_screen()
+        self.clear_screen()
         self.make_db_connection()
         if self.flag in {"-a", "-add"}:
             self.add_credentials()
@@ -258,24 +260,34 @@ class HelldoorSecrets(HelldoorUsers):
         elif self.flag in {"-u", "-update"}:
             self.update_credentials()
         else:
-            print("Invalid Flag")
+            print(f"'{self.flag}' is Invalid Flag.\nFor more info use 'help'")
 
     def add_credentials(self):
         try:
-            self.site_name = input("Enter Site/App Name : ")
-            self.password = getpass("Enter Password : ")
-            self.site_url = input("Enter Site/App URL : ")
-            self.contact_no = input("Enter Contact No. : ")
-            self.email_id = input("Enter Email Id : ")
-            self.recovery_email = input("Enter Recovery Mail Id : ")
-            self.recovery_question = input("Enter Recovery Question : ")
-            self.recovery_answer = input("Enter Recovery Answer :")
+            for chances in range(1, 4):
+                self.site_name = input("*Enter Site/App Name : ")
+                if self.site_name == "":
+                    print(f"Site/App Name is Required Field ({chances}/3)")
+                    continue
+
+                self.password = getpass("*Enter Password : ")
+                if self.password == "":
+                    print(f"Password is Required Field ({chances}/3)")
+                    continue
+                self.site_url = input("Enter Site/App URL : ") or None
+                self.contact_no = input("Enter Contact No. : ") or None
+                self.email_id = input("Enter Email Id : ") or None
+                self.recovery_email = input("Enter Recovery Mail Id : ") or None
+                self.recovery_question = input("Enter Recovery Question : ") or None
+                self.recovery_answer = input("Enter Recovery Answer :") or None
+                break
+
             self.hashed_pass, salt = self.hash_password(self.password)
             self.cursor.execute(
                 f"""
                 INSERT INTO user_credentials
                 VALUES(
-                    '{self.master_username}',
+                    '{super().master_username}',
                     '{self.site_name}',
                     '{self.hashed_pass}',
                     '{self.site_url}',
@@ -287,6 +299,7 @@ class HelldoorSecrets(HelldoorUsers):
                     );
                 """
             )
+            self.mydb.commit()
 
         except KeyboardInterrupt:
             print("\nExited Successfully")

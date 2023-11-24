@@ -7,6 +7,7 @@ use password_manager;
 -- SQLBook: Code
 CREATE TABLE master_accounts(username VARCHAR(20) PRIMARY KEY,hash_pass VARCHAR(32) NOT NULL);
 -- SQLBook: Code
+-- Active: 1700549358859@@127.0.0.1@3306@password_manager
 SELECT * from master_accounts;
 -- SQLBook: Code
 INSERT INTO master_accounts VALUES('',{hashed_pass});
@@ -23,7 +24,7 @@ delete from master_accounts;
 CREATE TABLE user_credentials(
     username VARCHAR(20) NOT NULL,
     site_name VARCHAR(20) PRIMARY KEY,
-    hashed_pass VARCHAR(32) NOT NULL,
+    hashed_pass VARCHAR(97) NOT NULL,
     site_url VARCHAR(50),
     contact_num VARCHAR(10),
     email_id VARCHAR(255),

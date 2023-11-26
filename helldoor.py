@@ -156,7 +156,7 @@ class HelldoorUsers:
     def change_credentials(self):
         try:
             self.want_to_login = False
-            self.ask_for_login("Let's Change Your Password")
+            self.ask_for_login("Let'sChange Your Password")
 
             for chances in range(1, 4):
                 old_master_pass = getpass("Current Password : ")
@@ -251,11 +251,11 @@ class HelldoorSecrets(HelldoorUsers):
     def flag_check(self):
         self.clear_screen()
         self.make_db_connection()
-        if self.flag in {"-a", "-add"}:
+        if self.flag in {"-a", "-add", "-am", "-addmuliple"}:
             self.add_credentials()
-        elif self.flag in {"-v", "-view", "-va", "-viewall"}:
+        elif self.flag in {"-v", "-view", "-vs", "viewselect", "-va", "-viewall"}:
             self.view_credentials()
-        elif self.flag in {"-d", "-delete", "-da", "-deleteall"}:
+        elif self.flag in {"-d", "-del", "-ds", "-delselect", "-da", "-delall"}:
             self.delete_credentials()
         elif self.flag in {"-u", "-update"}:
             self.update_credentials()
@@ -264,43 +264,53 @@ class HelldoorSecrets(HelldoorUsers):
 
     def add_credentials(self):
         try:
-            for chances in range(1, 4):
-                self.site_name = input("*Enter Site/App Name : ")
-                if self.site_name == "":
-                    print(f"Site/App Name is Required Field ({chances}/3)")
-                    continue
+            print("Exit -> ctrl + c")
+            credential_count = 20 if self.flag in {"-am", "-addmultiple"} else 1
+            for _ in range(credential_count):
+                print("\nAdd Credentials\n-------------------")
+                chances = 1
+                while chances < 4:
+                    self.site_name = input("*Enter Site/App Name : ")
+                    if self.site_name == "":
+                        print(f"Site/App Name is Required Field ({chances}/3)")
+                        chances += 1
+                        continue
 
-                self.password = getpass("*Enter Password : ")
-                if self.password == "":
-                    print(f"Password is Required Field ({chances}/3)")
-                    continue
-                self.site_url = input("Enter Site/App URL : ") or None
-                self.contact_no = input("Enter Contact No. : ") or None
-                self.email_id = input("Enter Email Id : ") or None
-                self.recovery_email = input("Enter Recovery Mail Id : ") or None
-                self.recovery_question = input("Enter Recovery Question : ") or None
-                self.recovery_answer = input("Enter Recovery Answer :") or None
-                break
+                    chances = 1
+                    self.password = getpass("*Enter Password : ")
+                    if self.password == "":
+                        print(f"Password is Required Field ({chances}/3)")
+                        chances += 1
+                        continue
 
-            self.hashed_pass, salt = self.hash_password(self.password)
-            self.cursor.execute(
-                f"""
-                INSERT INTO user_credentials
-                VALUES(
-                    '{super().master_username}',
-                    '{self.site_name}',
-                    '{self.hashed_pass}',
-                    '{self.site_url}',
-                    '{self.contact_no}',
-                    '{self.email_id}',
-                    '{self.recovery_email}',
-                    '{self.recovery_question}',
-                    '{self.recovery_answer}'
-                    );
-                """
-            )
-            self.mydb.commit()
+                    self.site_url = input("Enter Site/App URL : ")
+                    self.contact_no = input("Enter Contact No. : ")
+                    self.email_id = input("Enter Email Id : ")
+                    self.recovery_email = input("Enter Recovery Mail Id : ")
+                    self.recovery_question = input("Enter Recovery Question : ")
+                    self.recovery_answer = input("Enter Recovery Answer :")
+                    break
 
+                self.hashed_pass, salt = self.hash_password(self.password)
+                self.cursor.execute(
+                    "INSERT INTO user_credentials VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+                    (
+                        super().master_username,
+                        self.site_name,
+                        self.hashed_pass,
+                        self.site_url,
+                        self.contact_no,
+                        self.email_id,
+                        self.recovery_email,
+                        self.recovery_question,
+                        self.recovery_answer,
+                    ),
+                )
+                self.mydb.commit()
+                if self.cursor.rowcount == 1:
+                    print(f"\nCredentials Added Successfully For {self.site_name}")
+            if credential_count == 20:
+                print("Limit reached. Login again to add more.")
         except KeyboardInterrupt:
             print("\nExited Successfully")
 

@@ -40,4 +40,7 @@ INSERT into user_credentials VALUES('diablo','','dgsg',NULL,NULL,NULL,NULL,NULL,
 -- SQLBook: Code
 drop TABLE user_credentials;
 -- SQLBook: Code
+-- Active: 1700549358859@@127.0.0.1@3306@password_manager
 select * from user_credentials;
+-- SQLBook: Code
+delete from user_credentials;

@@ -7,6 +7,8 @@ from getpass import getpass
 
 import argon2
 import mysql.connector as db
+from cryptography.fernet import Fernet
+from prettytable import from_db_cursor
 
 
 class HelldoorUsers:
@@ -54,7 +56,7 @@ class HelldoorUsers:
 
     @staticmethod
     def hash_password(plain_pass: str) -> str:
-        salt_len = 16
+        salt_len = 32
         hashed_fn = argon2.PasswordHasher(
             salt_len=salt_len,
         )
@@ -81,7 +83,10 @@ class HelldoorUsers:
                 HelldoorUsers.master_username = input("Username : ")
                 self.cursor.execute("SELECT username from master_accounts;")
                 username_list = self.cursor.fetchall()
-                if HelldoorUsers.master_username in username_list:
+
+                if any(
+                    user[0] == HelldoorUsers.master_username for user in username_list
+                ):
                     print(f"Username Taken, Try Again({chances}/3)")
                 else:
                     break
@@ -156,7 +161,7 @@ class HelldoorUsers:
     def change_credentials(self):
         try:
             self.want_to_login = False
-            self.ask_for_login("Let'sChange Your Password")
+            self.ask_for_login("Let's Change Your Password")
 
             for chances in range(1, 4):
                 old_master_pass = getpass("Current Password : ")
@@ -262,60 +267,116 @@ class HelldoorSecrets(HelldoorUsers):
         else:
             print(f"'{self.flag}' is Invalid Flag.\nFor more info use 'help'")
 
+    def fetch_encrpytion_key(self):
+        # self.cursor.execute(
+        #     f"SELECT salt FROM master_accounts WHERE username = '{super().master_username}'"
+        # )
+        # return self.cursor.fetchone()[0].encode("utf-8")
+        return Fernet.generate_key()
+
     def add_credentials(self):
         try:
             print("Exit -> ctrl + c")
             credential_count = 20 if self.flag in {"-am", "-addmultiple"} else 1
-            for _ in range(credential_count):
-                print("\nAdd Credentials\n-------------------")
-                chances = 1
-                while chances < 4:
+            for cred_count in range(credential_count):
+                cred_count = "" if credential_count == 1 else f"{cred_count+1})"
+                print(f"\n{cred_count} Add Credentials\n-------------------")
+
+                for chances in range(1, 4):
                     self.site_name = input("*Enter Site/App Name : ")
                     if self.site_name == "":
                         print(f"Site/App Name is Required Field ({chances}/3)")
-                        chances += 1
-                        continue
+                    else:
+                        break
 
-                    chances = 1
+                for chances in range(1, 4):
                     self.password = getpass("*Enter Password : ")
                     if self.password == "":
                         print(f"Password is Required Field ({chances}/3)")
-                        chances += 1
-                        continue
+                    else:
+                        break
 
-                    self.site_url = input("Enter Site/App URL : ")
-                    self.contact_no = input("Enter Contact No. : ")
-                    self.email_id = input("Enter Email Id : ")
-                    self.recovery_email = input("Enter Recovery Mail Id : ")
-                    self.recovery_question = input("Enter Recovery Question : ")
-                    self.recovery_answer = input("Enter Recovery Answer :")
-                    break
+                self.site_url = input("Enter Site/App URL : ")
+                self.contact_no = input("Enter Contact No. : ")
+                self.email_id = input("Enter Email Id : ")
+                self.linked_with = input("Enter Linked Account : ")
 
-                self.hashed_pass, salt = self.hash_password(self.password)
+                fernet = Fernet(self.fetch_encrpytion_key())
+                self.encrypted_pass = fernet.encrypt(self.password.encode())
+
                 self.cursor.execute(
-                    "INSERT INTO user_credentials VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+                    "INSERT INTO user_credentials VALUES(%s,%s,%s,%s,%s,%s,%s)",
                     (
                         super().master_username,
                         self.site_name,
-                        self.hashed_pass,
+                        self.encrypted_pass,
                         self.site_url,
                         self.contact_no,
                         self.email_id,
-                        self.recovery_email,
-                        self.recovery_question,
-                        self.recovery_answer,
+                        self.linked_with,
                     ),
                 )
                 self.mydb.commit()
                 if self.cursor.rowcount == 1:
-                    print(f"\nCredentials Added Successfully For {self.site_name}")
+                    print(f"\nCredentials added auccessfully for {self.site_name}")
+                else:
+                    print(f"\n Failed!!!")
+
             if credential_count == 20:
                 print("Limit reached. Login again to add more.")
         except KeyboardInterrupt:
             print("\nExited Successfully")
 
     def view_credentials(self):
-        pass
+        def fetch_queries(condition):
+            self.cursor.execute(
+                f"""
+                SELECT site_name, encrypted_pass, site_url, contact_num, email_id, linked_with
+                FROM user_credentials
+                WHERE {condition};
+                """
+            )
+
+        try:
+            if self.flag in {"-va", "viewall"}:
+                fetch_queries(f"username = '{super().master_username}'")
+
+            elif self.flag in {"-v", "view"}:
+                site_name = input("Enter Site Name : ")
+                fetch_queries(f"site_name = '{site_name}'")
+
+            else:
+                print(
+                    """
+                      Filter
+                      ---------
+                      1. Site/App Name
+                      2. Site/App URL
+                      3. Contact Number
+                      4. Email ID
+                      5. Linked Accounts
+                      """
+                )
+                filter_choice = int(input("Which Filter (1-5) : "))
+                filter_input = input("Enter Value : ")
+                filter_to_column = {
+                    1: "site_name",
+                    2: "site_url",
+                    3: "contact_num",
+                    4: "email_id",
+                    5: "linked_with",
+                }
+                fetch_queries(
+                    f"{filter_to_column.get(filter_choice)} = '{filter_input}'"
+                )
+
+            # if self.cursor.rowcount >= 1:
+            print(from_db_cursor(self.cursor))
+            # else:
+            #     print("0 Credentials Found")
+
+        except KeyboardInterrupt:
+            print("\nExited Successfully")
 
     def delete_credentials(self):
         pass

@@ -1,2 +1,4 @@
 argon2-cffi==23.1.0
+cryptography==41.0.5
 mysql-connector-python==8.2.0
+prettytable==3.9.0

@@ -5,14 +5,16 @@ CREATE DATABASE password_manager
 -- SQLBook: Code
 use password_manager;
 -- SQLBook: Code
-CREATE TABLE master_accounts(username VARCHAR(20) PRIMARY KEY,hash_pass VARCHAR(32) NOT NULL);
+CREATE TABLE master_accounts(username VARCHAR(20) PRIMARY KEY,hashed_pass VARCHAR(255) NOT NULL,salt VARCHAR(32) not NULL);
+-- SQLBook: Code
+drop Table master_accounts;
 -- SQLBook: Code
 -- Active: 1700549358859@@127.0.0.1@3306@password_manager
 SELECT * from master_accounts;
 -- SQLBook: Code
 INSERT INTO master_accounts VALUES('',{hashed_pass});
 -- SQLBook: Code
-ALTER TABLE master_accounts add salt VARCHAR(16) not NULL;
+ALTER TABLE master_accounts add ;
 -- SQLBook: Code
 alter table master_accounts RENAME COLUMN hash_pass to hashed_pass
 -- SQLBook: Code
@@ -24,14 +26,12 @@ delete from master_accounts;
 CREATE TABLE user_credentials(
     username VARCHAR(20) NOT NULL,
     site_name VARCHAR(20) PRIMARY KEY,
-    hashed_pass VARCHAR(97) NOT NULL,
+    encrypted_pass VARCHAR(256) NOT NULL,
     site_url VARCHAR(50),
     contact_num VARCHAR(10),
     email_id VARCHAR(255),
-    recovery_email VARCHAR(255),
-    recovery_question VARCHAR(255),
-    revovery_answer VARCHAR(255),
-    FOREIGN KEY (username) REFERENCES master_accounts(username));
+    linked_with VARCHAR(255),
+    FOREIGN KEY (username) REFERENCES master_accounts(username) ON DELETE CASCADE);
 
 -- SQLBook: Code
 alter table user_credentials ADD

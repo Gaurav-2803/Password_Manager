@@ -12,9 +12,11 @@ drop Table master_accounts;
 -- Active: 1700549358859@@127.0.0.1@3306@password_manager
 SELECT * from master_accounts;
 -- SQLBook: Code
+update master_accounts set ed_key='jgxfkhskd283' where username='d';
+-- SQLBook: Code
 INSERT INTO master_accounts VALUES('',{hashed_pass});
 -- SQLBook: Code
-ALTER TABLE master_accounts add ;
+ALTER TABLE master_accounts add COLUMN ed_key VARCHAR(256);
 -- SQLBook: Code
 alter table master_accounts RENAME COLUMN hash_pass to hashed_pass
 -- SQLBook: Code
@@ -40,7 +42,9 @@ INSERT into user_credentials VALUES('diablo','','dgsg',NULL,NULL,NULL,NULL,NULL,
 -- SQLBook: Code
 drop TABLE user_credentials;
 -- SQLBook: Code
--- Active: 1700549358859@@127.0.0.1@3306@password_manager
+-- Active: 1700549358859@@127.0.0.1@3306
 select * from user_credentials;
 -- SQLBook: Code
 delete from user_credentials;
+-- SQLBook: Code
+select ed_key from master_accounts where username='d'

@@ -8,7 +8,7 @@ from getpass import getpass
 import argon2
 import mysql.connector as db
 from cryptography.fernet import Fernet
-from prettytable import from_db_cursor
+from prettytable import PrettyTable
 
 
 class HelldoorUsers:
@@ -62,7 +62,7 @@ class HelldoorUsers:
         )
         salt = "".join(
             random.choices(
-                string.punctuation + string.digits + string.ascii_letters,
+                string.digits + string.ascii_letters,
                 k=salt_len,
             )
         )
@@ -99,7 +99,11 @@ class HelldoorUsers:
                     hashed_pass, salt = self.hash_password(self.master_pass)
                     self.cursor.execute(
                         f"""
-                        INSERT INTO master_accounts
+                        INSERT INTO master_accounts (
+                            username,
+                            hashed_pass,
+                            salt
+                            )
                         VALUES (
                             '{HelldoorUsers.master_username}',
                             '{hashed_pass}',
@@ -136,7 +140,6 @@ class HelldoorUsers:
                     """
                 )
                 db_hashed_pass, salt = list(self.cursor.fetchone())
-
                 if self.verify_password(db_hashed_pass, self.master_password, salt):
                     self.door_opened = True
                     if self.want_to_login:
@@ -268,11 +271,23 @@ class HelldoorSecrets(HelldoorUsers):
             print(f"'{self.flag}' is Invalid Flag.\nFor more info use 'help'")
 
     def fetch_encrpytion_key(self):
-        # self.cursor.execute(
-        #     f"SELECT salt FROM master_accounts WHERE username = '{super().master_username}'"
-        # )
-        # return self.cursor.fetchone()[0].encode("utf-8")
-        return Fernet.generate_key()
+        self.cursor.execute(
+            f"""
+                SELECT ed_key
+                FROM master_accounts
+                WHERE username = '{super().master_username}';
+                """
+        )
+        ed_key = self.cursor.fetchone()[0].encode()
+
+        if ed_key is None:
+            ed_key = Fernet.generate_key()
+            self.cursor.execute(
+                f"UPDATE master_accounts SET ed_key = '{ed_key.decode()}' WHERE username = '{super().master_username}'",
+            )
+            self.mydb.commit()
+
+        return ed_key
 
     def add_credentials(self):
         try:
@@ -300,7 +315,6 @@ class HelldoorSecrets(HelldoorUsers):
                 self.contact_no = input("Enter Contact No. : ")
                 self.email_id = input("Enter Email Id : ")
                 self.linked_with = input("Enter Linked Account : ")
-
                 fernet = Fernet(self.fetch_encrpytion_key())
                 self.encrypted_pass = fernet.encrypt(self.password.encode())
 
@@ -338,6 +352,8 @@ class HelldoorSecrets(HelldoorUsers):
             )
 
         try:
+            fernet = Fernet(self.fetch_encrpytion_key())
+
             if self.flag in {"-va", "viewall"}:
                 fetch_queries(f"username = '{super().master_username}'")
 
@@ -347,18 +363,9 @@ class HelldoorSecrets(HelldoorUsers):
 
             else:
                 print(
-                    """
-                      Filter
-                      ---------
-                      1. Site/App Name
-                      2. Site/App URL
-                      3. Contact Number
-                      4. Email ID
-                      5. Linked Accounts
-                      """
+                    "Filter\n---------\n1. Site/App Name\n2. Site/App URL\n3. Contact Number\n4. Email ID\n5. Linked Accounts"
                 )
                 filter_choice = int(input("Which Filter (1-5) : "))
-                filter_input = input("Enter Value : ")
                 filter_to_column = {
                     1: "site_name",
                     2: "site_url",
@@ -366,14 +373,26 @@ class HelldoorSecrets(HelldoorUsers):
                     4: "email_id",
                     5: "linked_with",
                 }
+
+                if filter_choice not in filter_to_column.keys():
+                    print("\nWrong Input")
+                    exit()
+
+                filter_input = input("Enter Value : ")
                 fetch_queries(
                     f"{filter_to_column.get(filter_choice)} = '{filter_input}'"
                 )
 
-            # if self.cursor.rowcount >= 1:
-            print(from_db_cursor(self.cursor))
-            # else:
-            #     print("0 Credentials Found")
+            cred_tuple = self.cursor.fetchall()
+            if self.cursor.rowcount >= 1:
+                table = PrettyTable()
+                table.field_names = ["Name", "Pass", "URL", "No.", "E-ID", "Acc"]
+                for cred in map(list, cred_tuple):
+                    cred[1] = fernet.decrypt(cred[1]).decode()
+                    table.add_row(cred)
+                print(table)
+            else:
+                print("0 Credentials Found")
 
         except KeyboardInterrupt:
             print("\nExited Successfully")
